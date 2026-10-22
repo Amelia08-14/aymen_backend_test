@@ -50,6 +50,12 @@ const createQuote = async (req, res) => {
       });
     }
 
+    // Contexte de la requête, lu côté serveur : stocké dans Quotes et transmis à HubSpot
+    const pageUri = clientPageUri || req.get('referer') || null;
+    const ipAddress = req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim() || req.socket?.remoteAddress || null;
+    const userAgent = req.get('user-agent') || null;
+    const tracking = extractTracking(req.body);
+
     const quoteData = {
       email,
       firstName,
@@ -67,7 +73,11 @@ const createQuote = async (req, res) => {
       projectStatus,
       consent: consent === 'true' || consent === true,
       sourceProject,
-      ...extractTracking(req.body),
+      ...tracking,
+      // page du formulaire : valeur du tracker, sinon celle vue par le serveur
+      page_uri: tracking.page_uri || (pageUri ? String(pageUri).slice(0, 2000) : null),
+      ip_address: ipAddress ? String(ipAddress).slice(0, 64) : null,
+      user_agent: userAgent ? String(userAgent).slice(0, 500) : null,
     };
 
     console.log('Création du devis...');
@@ -77,9 +87,6 @@ const createQuote = async (req, res) => {
     notifyCrm('quote', data, requestContext(req, { pageUri: clientPageUri, pageName }));
 
     try {
-      const pageUri = clientPageUri || req.get('referer') || null;
-      const ipAddress = req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim() || req.socket?.remoteAddress || null;
-      const userAgent = req.get('user-agent') || null;
       await trackLeadInHubspot({
         kind: 'quote',
         email,

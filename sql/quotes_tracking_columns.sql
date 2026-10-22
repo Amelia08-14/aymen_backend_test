@@ -46,4 +46,7 @@ ALTER TABLE `Quotes`
   ADD COLUMN IF NOT EXISTS `key_clicks` TEXT NULL,
   -- formulaire
   ADD COLUMN IF NOT EXISTS `form_started_at` DATETIME NULL,
-  ADD COLUMN IF NOT EXISTS `form_fill_seconds` INT NULL;
+  ADD COLUMN IF NOT EXISTS `form_fill_seconds` INT NULL,
+  -- lus côté serveur (IP après proxy, navigateur)
+  ADD COLUMN IF NOT EXISTS `ip_address` VARCHAR(64) NULL,
+  ADD COLUMN IF NOT EXISTS `user_agent` VARCHAR(500) NULL;

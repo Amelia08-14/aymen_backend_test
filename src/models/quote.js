@@ -108,6 +108,9 @@ module.exports = (sequelize, DataTypes) => {
     // formulaire
     form_started_at: { type: DataTypes.DATE, allowNull: true },
     form_fill_seconds: { type: DataTypes.INTEGER, allowNull: true },
+    // lus côté serveur (pas envoyés par le navigateur)
+    ip_address: { type: DataTypes.STRING(64), allowNull: true },
+    user_agent: { type: DataTypes.STRING(500), allowNull: true },
   }, {
     
   });
