@@ -4,6 +4,7 @@ const db = require('../models');
 const { buildMessage, trackLeadInHubspot } = require('../services/hubspotForms');
 const { notifyCrm, requestContext } = require('../services/crmWebhook');
 const { pushLeadToOdoo } = require('../services/odooForms');
+const { extractTracking } = require('../services/quoteTracking');
 
 console.log('=== CHARGEMENT DU CONTROLLER QUOTE ===');
 console.log('db.Quote disponible:', !!db.Quote);
@@ -65,7 +66,8 @@ const createQuote = async (req, res) => {
       contactTime,
       projectStatus,
       consent: consent === 'true' || consent === true,
-      sourceProject
+      sourceProject,
+      ...extractTracking(req.body),
     };
 
     console.log('Création du devis...');
