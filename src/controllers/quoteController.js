@@ -1,4 +1,5 @@
 // controllers/quoteController.js
+const fs = require('fs');
 const db = require('../models');
 const { buildMessage, trackLeadInHubspot } = require('../services/hubspotForms');
 const { notifyCrm, requestContext } = require('../services/crmWebhook');
@@ -7,6 +8,15 @@ const { pushLeadToOdoo } = require('../services/odooForms');
 console.log('=== CHARGEMENT DU CONTROLLER QUOTE ===');
 console.log('db.Quote disponible:', !!db.Quote);
 console.log('=======================================');
+
+// Env TEST : trace chaque devis reçu (tous les champs). Si QUOTE_LOG_FILE est défini,
+// la même trace est ajoutée à ce fichier pour la suivre en direct : tail -f <fichier>
+function logQuote(label, payload) {
+  const line = `[QUOTE ${new Date().toISOString()}] ${label}:\n${JSON.stringify(payload, null, 2)}`;
+  console.log(line);
+  const file = process.env.QUOTE_LOG_FILE;
+  if (file) fs.appendFile(file, `${line}\n`, () => {});
+}
 
 const createQuote = async (req, res) => {
   console.log('📝 createQuote appelée');
@@ -19,7 +29,7 @@ const createQuote = async (req, res) => {
       consent, sourceProject, hutk, pageUri: clientPageUri, pageName
     } = req.body;
 
-    console.log('Données reçues:', { firstName, lastName, email, phone });
+    logQuote('Données reçues (req.body complet)', req.body);
 
     // Validation de base
     if (!firstName || !lastName || !email || !phone) {
@@ -102,7 +112,7 @@ const createQuote = async (req, res) => {
 
     let odooStatus = null;
     try {
-      odooStatus = await pushLeadToOdoo({
+      const odooPayload = {
         residence_id: String(sourceProject || ''),
         nom: String(lastName || ''),
         prenom: String(firstName || ''),
@@ -119,7 +129,10 @@ const createQuote = async (req, res) => {
         heure_contact: String(contactTime || ''),
         statut_projet: String(projectStatus || ''),
         projet: String(sourceProject || ''),
-      });
+      };
+      logQuote('Payload envoyé à Odoo', odooPayload);
+      odooStatus = await pushLeadToOdoo(odooPayload);
+      logQuote('Réponse Odoo', odooStatus);
       if (odooStatus?.sent) {
         console.log('✅ [Odoo] Devis', data.id, 'poussé avec succès:', JSON.stringify(odooStatus.result));
       } else {
